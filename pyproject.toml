@@ -8,6 +8,9 @@ version = "1.1.0"
 description = "Lightning-fast Python dependency analyzer with MCP server support"
 readme = "README.md"
 requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+]
 license = {text = "MIT"}
 authors = [
     {name = "FastDeps Team", email = "fastdeps@example.com"},
@@ -55,9 +58,6 @@ Changelog = "https://github.com/fastdeps/fastdeps/blob/main/CHANGELOG.md"
 fastdeps = "fastdeps.cli:main"
 
 [project.optional-dependencies]
-mcp = [
-    "mcp>=1.0.0",  # Model Context Protocol support
-]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -76,7 +76,6 @@ viz = [
     "graphviz>=0.20",  # Optional for better visualization
 ]
 all = [
-    "mcp>=1.0.0",  # Include MCP in 'all' extras
     "graphviz>=0.20",
 ]
 
