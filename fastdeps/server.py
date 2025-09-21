@@ -15,6 +15,14 @@ from .output import GraphRenderer
 async def main():
     """Main MCP server entry point using stdio."""
     import sys
+    import signal
+
+    # Set up timeout handler for stuck processes
+    def timeout_handler(signum, frame):
+        print("FastDeps MCP: Analysis timeout", file=sys.stderr)
+        sys.exit(1)
+
+    signal.signal(signal.SIGALRM, timeout_handler)
 
     # Check if MCP is available
     try:
@@ -111,8 +119,8 @@ async def main():
                 print(f"FastDeps MCP: Analyzing {abs_path} (internal_only={not include_external})",
                       file=sys.stderr, flush=True)
 
-                # Run analysis
-                analyzer = DependencyAnalyzer()
+                # Run analysis (disable multiprocessing in MCP context)
+                analyzer = DependencyAnalyzer(num_workers=1)
                 graph = analyzer.analyze(
                     str(abs_path),
                     internal_only=not include_external
@@ -143,8 +151,8 @@ async def main():
                         text=f"Error: Path does not exist: {project_path} (resolved to {abs_path})"
                     )]
 
-                # Run analysis
-                analyzer = DependencyAnalyzer()
+                # Run analysis (disable multiprocessing in MCP context)
+                analyzer = DependencyAnalyzer(num_workers=1)
                 graph = analyzer.analyze(str(abs_path), internal_only=True)
 
                 # Find cycles
@@ -174,8 +182,8 @@ async def main():
                         text=f"Error: Path does not exist: {project_path} (resolved to {abs_path})"
                     )]
 
-                # Run analysis
-                analyzer = DependencyAnalyzer()
+                # Run analysis (disable multiprocessing in MCP context)
+                analyzer = DependencyAnalyzer(num_workers=1)
                 graph = analyzer.analyze(str(abs_path), internal_only=False)
 
                 # Get stats
