@@ -98,10 +98,23 @@ async def main():
                 output_format = arguments.get("output_format", "json")
                 include_external = arguments.get("include_external", False)
 
+                # Resolve to absolute path
+                abs_path = Path(project_path).resolve()
+                if not abs_path.exists():
+                    return [TextContent(
+                        type="text",
+                        text=f"Error: Path does not exist: {project_path} (resolved to {abs_path})"
+                    )]
+
+                # Log for debugging
+                import sys
+                print(f"FastDeps MCP: Analyzing {abs_path} (internal_only={not include_external})",
+                      file=sys.stderr, flush=True)
+
                 # Run analysis
                 analyzer = DependencyAnalyzer()
                 graph = analyzer.analyze(
-                    project_path,
+                    str(abs_path),
                     internal_only=not include_external
                 )
 
@@ -122,9 +135,17 @@ async def main():
             elif name == "find_circular_deps":
                 project_path = arguments.get("project_path", ".")
 
+                # Resolve to absolute path
+                abs_path = Path(project_path).resolve()
+                if not abs_path.exists():
+                    return [TextContent(
+                        type="text",
+                        text=f"Error: Path does not exist: {project_path} (resolved to {abs_path})"
+                    )]
+
                 # Run analysis
                 analyzer = DependencyAnalyzer()
-                graph = analyzer.analyze(project_path, internal_only=True)
+                graph = analyzer.analyze(str(abs_path), internal_only=True)
 
                 # Find cycles
                 cycles = graph.find_cycles()
@@ -145,9 +166,17 @@ async def main():
             elif name == "get_dependency_stats":
                 project_path = arguments.get("project_path", ".")
 
+                # Resolve to absolute path
+                abs_path = Path(project_path).resolve()
+                if not abs_path.exists():
+                    return [TextContent(
+                        type="text",
+                        text=f"Error: Path does not exist: {project_path} (resolved to {abs_path})"
+                    )]
+
                 # Run analysis
                 analyzer = DependencyAnalyzer()
-                graph = analyzer.analyze(project_path, internal_only=False)
+                graph = analyzer.analyze(str(abs_path), internal_only=False)
 
                 # Get stats
                 stats = graph.get_stats()
