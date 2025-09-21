@@ -136,6 +136,18 @@ class ModuleResolver:
                     sibling_init = f"{sibling_module}.__init__"
                     if sibling_init in self.file_index:
                         return self.file_index[sibling_init]
+
+                # Also try resolving within parent package
+                # e.g., from gaia_airflow/dags/file.py, "utils.x" -> "gaia_airflow.utils.x"
+                if len(from_parts) > 1:
+                    # Try one level up
+                    parent_parts = from_parts[:-1]
+                    parent_module = '.'.join(parent_parts + module_name.split('.'))
+                    if parent_module in self.file_index:
+                        return self.file_index[parent_module]
+                    parent_init = f"{parent_module}.__init__"
+                    if parent_init in self.file_index:
+                        return self.file_index[parent_init]
             except ValueError:
                 pass
 
