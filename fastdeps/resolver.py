@@ -84,12 +84,12 @@ class ModuleResolver:
         """
         if level == 0:
             # Absolute import
-            return self._resolve_absolute(module_name)
+            return self._resolve_absolute(module_name, from_file)
         else:
             # Relative import
             return self._resolve_relative(module_name, from_file, level)
 
-    def _resolve_absolute(self, module_name: str) -> Optional[Path]:
+    def _resolve_absolute(self, module_name: str, from_file: Path = None) -> Optional[Path]:
         """Resolve absolute import"""
         if not module_name:
             return None
@@ -107,6 +107,25 @@ class ModuleResolver:
         package_init = f"{module_name}.__init__"
         if package_init in self.file_index:
             return self.file_index[package_init]
+
+        # If we have from_file, also try looking in the same package
+        if from_file:
+            try:
+                from_rel = from_file.relative_to(self.root_path)
+                from_parts = list(from_rel.parts[:-1])  # Get directory parts
+
+                # Try module as sibling in same directory
+                if from_parts:
+                    sibling_module = '.'.join(from_parts + [module_name])
+                    if sibling_module in self.file_index:
+                        return self.file_index[sibling_module]
+
+                    # Try as sibling package __init__.py
+                    sibling_init = f"{sibling_module}.__init__"
+                    if sibling_init in self.file_index:
+                        return self.file_index[sibling_init]
+            except ValueError:
+                pass
 
         # Try parent packages
         parts = module_name.split('.')
