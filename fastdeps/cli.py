@@ -104,6 +104,12 @@ MCP Server Mode:
         help='Suppress progress messages'
     )
 
+    parser.add_argument(
+        '--ignore-file-pattern',
+        action='append',
+        help='Glob patterns to ignore (can be used multiple times). Examples: "test_*.py", "**/tests/**", "*.pyc"'
+    )
+
     args = parser.parse_args()
 
     # Redirect print statements if quiet
@@ -113,7 +119,10 @@ MCP Server Mode:
 
     try:
         # Run analysis
-        analyzer = DependencyAnalyzer(num_workers=args.workers)
+        analyzer = DependencyAnalyzer(
+            num_workers=args.workers,
+            ignore_patterns=args.ignore_file_pattern
+        )
         graph = analyzer.analyze(args.target, internal_only=args.internal_only)
 
         # Restore stdout for output

@@ -13,14 +13,16 @@ from .graph import DependencyGraph
 class DependencyAnalyzer:
     """Main analyzer that coordinates all components"""
 
-    def __init__(self, num_workers: int = None, exclude_dirs: Set[str] = None):
+    def __init__(self, num_workers: int = None, exclude_dirs: Set[str] = None, ignore_patterns: List[str] = None):
         """
         Args:
             num_workers: Number of parallel workers
             exclude_dirs: Directories to exclude from analysis
+            ignore_patterns: Glob patterns to ignore files/folders
         """
         self.num_workers = num_workers
         self.exclude_dirs = exclude_dirs
+        self.ignore_patterns = ignore_patterns or []
 
     def analyze(self, target: str, internal_only: bool = False) -> DependencyGraph:
         """
@@ -48,7 +50,7 @@ class DependencyAnalyzer:
             root_path = target_path.parent
         else:
             # Directory/package
-            files_to_analyze = find_python_files(target_path, self.exclude_dirs)
+            files_to_analyze = find_python_files(target_path, self.exclude_dirs, self.ignore_patterns)
             root_path = target_path
 
         print(f"Found {len(files_to_analyze)} Python files to analyze")

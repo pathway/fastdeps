@@ -104,33 +104,84 @@ class ImportExtractor:
             return ""
 
 
-def find_python_files(root_path: Path, exclude_dirs: Set[str] = None) -> List[Path]:
+def find_python_files(root_path: Path, exclude_dirs: Set[str] = None, ignore_patterns: List[str] = None) -> List[Path]:
     """
     Fast discovery of Python files using os.scandir (faster than Path.rglob)
+
+    Args:
+        root_path: Root directory to search
+        exclude_dirs: Directory names to exclude
+        ignore_patterns: Glob patterns to ignore (e.g., "test_*.py", "**/tests/**", "*.pyc")
     """
+    import fnmatch
+
     if exclude_dirs is None:
         exclude_dirs = {'.git', '__pycache__', '.venv', 'venv', 'env',
                         'node_modules', '.tox', '.mypy_cache', '.pytest_cache'}
 
+    if ignore_patterns is None:
+        ignore_patterns = []
+
     python_files = []
     dirs_to_process = [root_path]
+
+    def should_ignore(path: Path) -> bool:
+        """Check if path matches any ignore pattern"""
+        # Convert to relative path from root
+        try:
+            rel_path = path.relative_to(root_path)
+        except ValueError:
+            rel_path = path
+
+        str_path = str(rel_path)
+
+        for pattern in ignore_patterns:
+            # Handle ** patterns for recursive matching
+            if '**' in pattern:
+                # Convert ** to match any path depth
+                pattern_regex = pattern.replace('**/', '*/').replace('**', '*')
+                if fnmatch.fnmatch(str_path, pattern_regex):
+                    return True
+                # Also check each path component
+                for part in rel_path.parts:
+                    if fnmatch.fnmatch(part, pattern.replace('**/', '').replace('**', '*')):
+                        return True
+            else:
+                # Simple pattern matching
+                if fnmatch.fnmatch(str_path, pattern):
+                    return True
+                # Also check just the filename
+                if fnmatch.fnmatch(path.name, pattern):
+                    return True
+
+        return False
 
     while dirs_to_process:
         current_dir = dirs_to_process.pop()
 
+        # Check if entire directory should be ignored
+        if should_ignore(current_dir):
+            continue
+
         try:
             with os.scandir(current_dir) as entries:
                 for entry in entries:
+                    entry_path = Path(entry.path)
+
                     # Skip hidden and excluded directories
                     if entry.name.startswith('.') and entry.is_dir():
                         continue
                     if entry.name in exclude_dirs:
                         continue
 
+                    # Check ignore patterns
+                    if should_ignore(entry_path):
+                        continue
+
                     if entry.is_file() and entry.name.endswith('.py'):
-                        python_files.append(Path(entry.path))
+                        python_files.append(entry_path)
                     elif entry.is_dir() and not entry.is_symlink():
-                        dirs_to_process.append(Path(entry.path))
+                        dirs_to_process.append(entry_path)
         except (PermissionError, OSError):
             # Skip directories we can't read
             continue
