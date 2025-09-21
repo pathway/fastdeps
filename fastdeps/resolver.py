@@ -99,6 +99,18 @@ class ModuleResolver:
         if top_level in self.STDLIB_MODULES:
             return None  # Stdlib - no file path
 
+        # If module starts with the root package name, strip it
+        # e.g., "gaia_elf_v3.agsearch_elf_v2" -> "agsearch_elf_v2"
+        if self.root_path and self.root_path.name == top_level:
+            stripped_module = '.'.join(module_name.split('.')[1:]) if '.' in module_name else ''
+            if stripped_module:
+                # Try with stripped version first
+                if stripped_module in self.file_index:
+                    return self.file_index[stripped_module]
+                stripped_init = f"{stripped_module}.__init__"
+                if stripped_init in self.file_index:
+                    return self.file_index[stripped_init]
+
         # Try direct module lookup
         if module_name in self.file_index:
             return self.file_index[module_name]
