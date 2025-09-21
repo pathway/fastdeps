@@ -53,7 +53,6 @@ Changelog = "https://github.com/fastdeps/fastdeps/blob/main/CHANGELOG.md"
 
 [project.scripts]
 fastdeps = "fastdeps.cli:main"
-fastdeps-mcp-server = "fastdeps.mcp_server:serve_command"
 
 [project.optional-dependencies]
 mcp = [
