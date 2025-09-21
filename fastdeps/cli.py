@@ -137,12 +137,28 @@ MCP Server Mode:
             # Show only cycles
             cycles = graph.find_cycles()
             if cycles:
-                print("Circular dependencies found:")
+                print("Circular dependencies detected:")
                 for i, cycle in enumerate(cycles, 1):
-                    print(f"\nCycle {i}:")
+                    print(f"\n{'='*60}")
+                    print(f"Cycle {i}:")
+
+                    # Show cycle path
                     for file_path in cycle:
                         rel_path = file_path.relative_to(graph.root_path) if graph.root_path else file_path
                         print(f"  → {rel_path}")
+
+                    # Analyze the cycle
+                    analysis = graph.analyze_cycle(cycle)
+
+                    if analysis['likely_false_positive']:
+                        print("\n  ⚠️  LIKELY FALSE POSITIVE:")
+                        for reason in analysis['reasons']:
+                            print(f"     - {reason}")
+
+                    if analysis['recommendations']:
+                        print("\n  💡 Recommendations:")
+                        for rec in analysis['recommendations']:
+                            print(f"     - {rec}")
             else:
                 print("No circular dependencies found! ✨")
             return 0

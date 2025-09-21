@@ -99,6 +99,50 @@ class ModuleResolver:
         if top_level in self.STDLIB_MODULES:
             return None  # Stdlib - no file path
 
+        # If we have from_file, check siblings FIRST to avoid false cycles
+        # This is critical for cases like "from data_shelf import X" inside data_shelf package
+        if from_file:
+            try:
+                from_rel = from_file.relative_to(self.root_path)
+                from_parts = list(from_rel.parts[:-1])  # Get directory parts
+
+                # Try module as sibling in same directory
+                if from_parts:
+                    # First try the full sibling path
+                    sibling_module = '.'.join(from_parts + [module_name])
+
+                    # CRITICAL: When importing "data_shelf" from within data_shelf package,
+                    # prefer "data_shelf.data_shelf" (the file) over "data_shelf" (the package)
+                    # This prevents false cycles
+                    if sibling_module in self.file_index:
+                        resolved = self.file_index[sibling_module]
+                        # If not __init__, this is what we want
+                        if resolved.stem != '__init__':
+                            return resolved
+
+                    # Try as sibling package __init__.py
+                    sibling_init = f"{sibling_module}.__init__"
+                    if sibling_init in self.file_index:
+                        return self.file_index[sibling_init]
+
+                    # Finally, if we got __init__ earlier, return it
+                    if sibling_module in self.file_index:
+                        return self.file_index[sibling_module]
+
+                # Also try resolving within parent package
+                # e.g., from gaia_airflow/dags/file.py, "utils.x" -> "gaia_airflow.utils.x"
+                if len(from_parts) > 1:
+                    # Try one level up
+                    parent_parts = from_parts[:-1]
+                    parent_module = '.'.join(parent_parts + module_name.split('.'))
+                    if parent_module in self.file_index:
+                        return self.file_index[parent_module]
+                    parent_init = f"{parent_module}.__init__"
+                    if parent_init in self.file_index:
+                        return self.file_index[parent_init]
+            except ValueError:
+                pass
+
         # If module starts with the root package name, strip it
         # e.g., "gaia_elf_v3.agsearch_elf_v2" -> "agsearch_elf_v2"
         if self.root_path and self.root_path.name == top_level:
@@ -119,51 +163,6 @@ class ModuleResolver:
         package_init = f"{module_name}.__init__"
         if package_init in self.file_index:
             return self.file_index[package_init]
-
-        # If we have from_file, also try looking in the same package
-        if from_file:
-            try:
-                from_rel = from_file.relative_to(self.root_path)
-                from_parts = list(from_rel.parts[:-1])  # Get directory parts
-
-                # Try module as sibling in same directory
-                if from_parts:
-                    # When importing "foo" from inside a package, prefer "package.foo" over "foo/__init__.py"
-                    # This avoids false cycles when a module imports a sibling with the package name
-
-                    # First try the full sibling path (e.g., "data_shelf.data_shelf")
-                    sibling_module = '.'.join(from_parts + [module_name])
-                    if sibling_module in self.file_index:
-                        return self.file_index[sibling_module]
-
-                    # For single-name imports, also check if there's a module with repeated name
-                    # e.g., "data_shelf" might mean "data_shelf.data_shelf" not "data_shelf/__init__.py"
-                    if '.' not in module_name and len(from_parts) >= 1:
-                        # Check if we're inside the package with same name
-                        if from_parts[-1] == module_name:
-                            # Try repeated name (data_shelf.data_shelf)
-                            repeated_module = '.'.join(from_parts + [module_name])
-                            if repeated_module in self.file_index:
-                                return self.file_index[repeated_module]
-
-                    # Try as sibling package __init__.py
-                    sibling_init = f"{sibling_module}.__init__"
-                    if sibling_init in self.file_index:
-                        return self.file_index[sibling_init]
-
-                # Also try resolving within parent package
-                # e.g., from gaia_airflow/dags/file.py, "utils.x" -> "gaia_airflow.utils.x"
-                if len(from_parts) > 1:
-                    # Try one level up
-                    parent_parts = from_parts[:-1]
-                    parent_module = '.'.join(parent_parts + module_name.split('.'))
-                    if parent_module in self.file_index:
-                        return self.file_index[parent_module]
-                    parent_init = f"{parent_module}.__init__"
-                    if parent_init in self.file_index:
-                        return self.file_index[parent_init]
-            except ValueError:
-                pass
 
         # Try parent packages
         parts = module_name.split('.')

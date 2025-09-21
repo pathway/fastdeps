@@ -120,6 +120,52 @@ class DependencyGraph:
 
         return False
 
+    def analyze_cycle(self, cycle: List[Path]) -> Dict:
+        """Analyze a cycle to determine if it's likely a false positive"""
+        analysis = {
+            'nodes': cycle,
+            'edges': [],
+            'likely_false_positive': False,
+            'reasons': [],
+            'recommendations': []
+        }
+
+        # Find edges in the cycle
+        for i, node in enumerate(cycle):
+            next_node = cycle[(i + 1) % len(cycle)]
+            if node in self.nodes and next_node in self.nodes[node].imports:
+                analysis['edges'].append((node, next_node))
+
+        # Check for common false positive patterns
+        for node in cycle:
+            # Check if it's an __init__.py file
+            if node.name == '__init__.py':
+                # Check if cycle involves package and its modules
+                package_dir = node.parent
+                for other in cycle:
+                    if other != node and other.parent == package_dir:
+                        analysis['likely_false_positive'] = True
+                        analysis['reasons'].append(
+                            f"Cycle involves {package_dir.name}/__init__.py and modules in same package"
+                        )
+                        analysis['recommendations'].append(
+                            f"Consider using relative imports (from . import ...) in {package_dir.name}/__init__.py"
+                        )
+                        analysis['recommendations'].append(
+                            f"Check for try/except import fallbacks in {other.name}"
+                        )
+
+        # Check for small cycles (likely mutual imports)
+        if len(cycle) == 2:
+            analysis['recommendations'].append(
+                "Consider refactoring: extract shared code to a third module"
+            )
+            analysis['recommendations'].append(
+                "Or use import inside functions instead of module level"
+            )
+
+        return analysis
+
     def get_stats(self) -> Dict:
         """Get graph statistics"""
         total_files = len(self.nodes)

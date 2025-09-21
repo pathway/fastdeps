@@ -115,7 +115,14 @@ class GraphRenderer:
         if cycles:
             lines.append("⚠️  Circular dependencies detected:")
             for i, cycle in enumerate(cycles, 1):
-                lines.append(f"  Cycle {i}:")
+                # Analyze the cycle
+                analysis = self.graph.analyze_cycle(cycle)
+
+                if analysis['likely_false_positive']:
+                    lines.append(f"  Cycle {i} (likely false positive - try/except imports?):")
+                else:
+                    lines.append(f"  Cycle {i}:")
+
                 for file_path in cycle:
                     rel_path = file_path.relative_to(self.graph.root_path) if self.graph.root_path else file_path
                     lines.append(f"    → {rel_path}")
