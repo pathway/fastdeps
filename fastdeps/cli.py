@@ -12,6 +12,21 @@ from .output import GraphRenderer
 
 def main():
     """Main CLI entry point"""
+    # Check for MCP server mode
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'serve':
+            # Use simplified server like Serena
+            from .server import main as serve_main
+            import asyncio
+            asyncio.run(serve_main())
+            return 0
+        elif sys.argv[1] == 'start-mcp-server':
+            # Alternative command for compatibility
+            from .server import main as serve_main
+            import asyncio
+            asyncio.run(serve_main())
+            return 0
+
     parser = argparse.ArgumentParser(
         description="FastDeps - Lightning-fast Python dependency analyzer",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -24,6 +39,10 @@ Examples:
   fastdeps myproject --internal-only    # Skip external dependencies
   fastdeps myproject --show-cycles      # Focus on circular dependencies
   fastdeps myproject --json             # Output JSON for tooling
+
+MCP Server Mode:
+  fastdeps serve                        # Start MCP server for AI assistants
+  uvx --from fastdeps fastdeps serve    # Via uvx
         """
     )
 

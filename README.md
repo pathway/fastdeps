@@ -18,13 +18,21 @@ FastDeps uses AST parsing instead of import execution, making it safe and incred
 - 🔍 **Accurate** - Handles all Python import styles correctly
 - 📊 **Visual** - Generates dependency graphs (DOT, PNG, SVG)
 - 🔄 **Cycle detection** - Finds circular dependencies instantly
-- 💾 **Zero dependencies** - Pure Python, no external packages needed
+- 🤖 **MCP Server** - AI assistant integration via Model Context Protocol
+- 💾 **Minimal dependencies** - Pure Python stdlib core, optional MCP
 
 ## Installation
 
 ### From PyPI (when published)
 ```bash
+# Basic installation
 pip install fastdeps
+
+# With MCP server support
+pip install fastdeps[mcp]
+
+# All features
+pip install fastdeps[all]
 ```
 
 ### From Source
@@ -32,13 +40,16 @@ pip install fastdeps
 git clone https://github.com/fastdeps/fastdeps.git
 cd fastdeps
 pip install -e .
+
+# With MCP support
+pip install -e ".[mcp]"
 ```
 
 ### Development Installation
 ```bash
 git clone https://github.com/fastdeps/fastdeps.git
 cd fastdeps
-pip install -e ".[dev]"
+pip install -e ".[dev,mcp]"
 pre-commit install
 ```
 
@@ -88,6 +99,46 @@ FastDeps instead:
 - `.svg` - Scalable vector graphics
 - `.json` - Machine-readable format
 - `.txt` - Human-readable report
+
+## MCP Server Mode
+
+FastDeps includes a Model Context Protocol (MCP) server, allowing AI assistants like Claude to analyze Python dependencies programmatically.
+
+### Starting the MCP Server
+
+```bash
+# Start MCP server
+fastdeps serve
+
+# Or via uvx
+uvx --from fastdeps[mcp] fastdeps serve
+```
+
+### Available MCP Tools
+
+- **analyze_dependencies** - Comprehensive project analysis
+- **find_circular_deps** - Detect circular dependencies
+- **get_dependency_stats** - Get project statistics
+
+### Using with Claude Desktop
+
+Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "fastdeps": {
+      "command": "uvx",
+      "args": ["--from", "fastdeps[mcp]", "fastdeps", "serve"]
+    }
+  }
+}
+```
+
+Then in Claude, you can analyze projects:
+- "Analyze the dependencies of my Python project"
+- "Find circular dependencies in /path/to/project"
+- "Show me dependency statistics"
 
 ## License
 

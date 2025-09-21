@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fastdeps"
-version = "1.0.0"
-description = "Lightning-fast Python dependency analyzer using AST parsing"
+version = "1.1.0"
+description = "Lightning-fast Python dependency analyzer with MCP server support"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
     {name = "FastDeps Team", email = "fastdeps@example.com"},
@@ -53,8 +53,12 @@ Changelog = "https://github.com/fastdeps/fastdeps/blob/main/CHANGELOG.md"
 
 [project.scripts]
 fastdeps = "fastdeps.cli:main"
+fastdeps-mcp-server = "fastdeps.mcp_server:serve_command"
 
 [project.optional-dependencies]
+mcp = [
+    "mcp>=1.0.0",  # Model Context Protocol support
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -71,6 +75,10 @@ docs = [
 ]
 viz = [
     "graphviz>=0.20",  # Optional for better visualization
+]
+all = [
+    "mcp>=1.0.0",  # Include MCP in 'all' extras
+    "graphviz>=0.20",
 ]
 
 [tool.setuptools.packages.find]
