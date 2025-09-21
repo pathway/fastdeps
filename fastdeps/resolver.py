@@ -128,9 +128,23 @@ class ModuleResolver:
 
                 # Try module as sibling in same directory
                 if from_parts:
+                    # When importing "foo" from inside a package, prefer "package.foo" over "foo/__init__.py"
+                    # This avoids false cycles when a module imports a sibling with the package name
+
+                    # First try the full sibling path (e.g., "data_shelf.data_shelf")
                     sibling_module = '.'.join(from_parts + [module_name])
                     if sibling_module in self.file_index:
                         return self.file_index[sibling_module]
+
+                    # For single-name imports, also check if there's a module with repeated name
+                    # e.g., "data_shelf" might mean "data_shelf.data_shelf" not "data_shelf/__init__.py"
+                    if '.' not in module_name and len(from_parts) >= 1:
+                        # Check if we're inside the package with same name
+                        if from_parts[-1] == module_name:
+                            # Try repeated name (data_shelf.data_shelf)
+                            repeated_module = '.'.join(from_parts + [module_name])
+                            if repeated_module in self.file_index:
+                                return self.file_index[repeated_module]
 
                     # Try as sibling package __init__.py
                     sibling_init = f"{sibling_module}.__init__"
